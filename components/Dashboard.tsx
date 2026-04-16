@@ -1,19 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { AppEvent, Transaction } from '../types';
+import React from 'react';
+import { AppEvent, Transaction, PartnerRegistryItem } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { DollarSign, Calendar, Users, TrendingUp, Sparkles, PieChart as PieChartIcon } from 'lucide-react';
-import { analyzeFinancialHealth } from '../services/geminiService';
+import { DollarSign, Calendar, Users, TrendingUp, PieChart as PieChartIcon, Award } from 'lucide-react';
 
 interface DashboardProps {
   events: AppEvent[];
   transactions: Transaction[];
+  partnerRegistry: PartnerRegistryItem[];
 }
 
 const COLORS = ['#f59e0b', '#4f46e5', '#10b981', '#ef4444', '#8b5cf6'];
 
-const Dashboard: React.FC<DashboardProps> = ({ events, transactions }) => {
-  const [aiAnalysis, setAiAnalysis] = useState<string>('Carregando análise...');
-
+const Dashboard: React.FC<DashboardProps> = ({ events, transactions, partnerRegistry }) => {
   // --- KPI Calculations ---
   const totalRevenue = transactions
     .filter(t => t.type === 'In')
@@ -70,27 +68,39 @@ const Dashboard: React.FC<DashboardProps> = ({ events, transactions }) => {
     value: eventsByType[type]
   }));
 
-  useEffect(() => {
-    const fetchAdvice = async () => {
-        if (!process.env.API_KEY) {
-            setAiAnalysis("Configure sua API Key para receber insights.");
-            return;
-        }
-        const advice = await analyzeFinancialHealth(totalRevenue, totalExpenses, upcomingEventsCount);
-        setAiAnalysis(advice);
-    };
-    fetchAdvice();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // --- Top 10 Partners Logic ---
+  const getTopPartners = () => {
+    // 1. Calculate frequency
+    const counts: Record<string, number> = {};
+    events.forEach(ev => {
+       ev.partners.forEach(p => {
+           // Try to match with registry ID if possible, else match name
+           const key = p.registryId || p.name;
+           counts[key] = (counts[key] || 0) + 1;
+       });
+    });
+
+    // 2. Map back to partner objects (or create temp ones if not in registry)
+    const partnerStats = Object.keys(counts).map(key => {
+       const registryItem = partnerRegistry.find(r => r.id === key || r.name === key);
+       return {
+           id: key,
+           name: registryItem ? registryItem.name : key, // Fallback if name used as key
+           category: registryItem ? registryItem.category : 'Outro',
+           count: counts[key]
+       };
+    });
+
+    // 3. Sort and take top 10
+    return partnerStats.sort((a, b) => b.count - a.count).slice(0, 10);
+ };
+
+ const topPartners = getTopPartners();
 
   return (
     <div className="p-6 space-y-6 animate-fade-in pb-20">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-3xl font-bold text-slate-800">Dashboard Geral</h2>
-        <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-lg border border-amber-100 shadow-sm">
-            <Sparkles size={18} />
-            <span className="text-sm font-medium italic">{aiAnalysis}</span>
-        </div>
       </div>
 
       {/* Stats Grid */}
@@ -136,6 +146,35 @@ const Dashboard: React.FC<DashboardProps> = ({ events, transactions }) => {
             </h3>
           </div>
         </div>
+      </div>
+
+      {/* TREND TOP 10 SECTION (Moved from PartnerManager) */}
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-6 text-white shadow-lg">
+         <div className="flex items-center gap-3 mb-4">
+            <div className="bg-amber-500 p-2 rounded-lg text-slate-900"><TrendingUp size={24} /></div>
+            <div>
+                <h3 className="font-bold text-lg">TrendTop 10 Parceiros</h3>
+                <p className="text-slate-400 text-xs">Parceiros com maior frequência em eventos</p>
+            </div>
+         </div>
+         
+         <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
+             {topPartners.length > 0 ? (
+                 topPartners.map((p, index) => (
+                    <div key={p.id} className="min-w-[140px] bg-white/10 rounded-lg p-3 border border-white/10 flex flex-col items-center text-center relative group">
+                        <div className="absolute top-2 right-2 text-xs font-bold text-amber-500">#{index + 1}</div>
+                        <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 mb-2">
+                             <Award size={18} className={index < 3 ? 'text-amber-400' : 'text-slate-400'} />
+                        </div>
+                        <div className="font-semibold text-sm truncate w-full" title={p.name}>{p.name}</div>
+                        <div className="text-[10px] text-slate-400 uppercase tracking-wide truncate w-full">{p.category}</div>
+                        <div className="mt-2 text-xs bg-white/20 px-2 py-0.5 rounded-full">{p.count} eventos</div>
+                    </div>
+                 ))
+             ) : (
+                 <div className="text-slate-400 text-sm italic w-full text-center py-4">Ainda não há dados suficientes de eventos.</div>
+             )}
+         </div>
       </div>
 
       {/* Charts Section */}

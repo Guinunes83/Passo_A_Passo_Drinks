@@ -98,11 +98,11 @@ const EventManager: React.FC<EventManagerProps> = ({ events, setEvents, products
         </button>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="flex-1 grid grid-cols-7 grid-rows-[auto_1fr] min-h-0">
+      {/* Calendar Grid - Fixed row height distribution */}
+      <div className="flex-1 grid grid-cols-7 auto-rows-fr min-h-0">
         {/* Weekday Headers */}
         {weekDays.map(day => (
-          <div key={day} className="py-2 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+          <div key={day} className="py-2 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-center">
             {day}
           </div>
         ))}
@@ -116,7 +116,7 @@ const EventManager: React.FC<EventManagerProps> = ({ events, setEvents, products
           return (
             <div 
               key={day.toISOString()} 
-              className={`min-h-[120px] p-2 border-b border-r border-slate-100 relative group transition-colors ${!isCurrentMonth ? 'bg-slate-50/50' : 'bg-white'}`}
+              className={`p-2 border-b border-r border-slate-100 relative group transition-colors ${!isCurrentMonth ? 'bg-slate-50/50' : 'bg-white'}`}
             >
               <div className="flex justify-between items-start mb-1">
                  <span className={`text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full ${

@@ -7,27 +7,43 @@ import {
   Receipt,
   LogOut,
   Menu,
-  Martini
+  Martini,
+  ListChecks,
+  Handshake
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Inventory from './components/Inventory';
 import EventManager from './components/EventManager';
 import StaffManager from './components/StaffManager';
 import FinanceManager from './components/FinanceManager';
+import EventList from './components/EventList';
+import PartnerManager from './components/PartnerManager';
 
 // Mock Data imports (simulated here for simplicity of single-file restriction, ideally in constants.ts)
-import { AppEvent, EventStatus, Product, Staff, StaffRole, StaffType, Transaction } from './types';
+import { AppEvent, EventStatus, Product, Staff, StaffRole, StaffType, Transaction, PartnerRegistryItem } from './types';
 
 // --- MOCK DATA START ---
+const MOCK_PARTNERS_REGISTRY: PartnerRegistryItem[] = [
+  { id: 'p1', name: 'DJ Alok Cover', category: 'DJ', phone: '(11) 91234-5678', contactPerson: 'Alok Jr.', notes: 'Especialista em eletrônica.' },
+  { id: 'p2', name: 'Cerimonial das Rosas', category: 'Cerimonialista', phone: '(11) 98765-4321', contactPerson: 'Rosa Maria', notes: 'Muito organizada, exige cronograma.' },
+  { id: 'p3', name: 'Buffet Kids', category: 'Buffet', phone: '(11) 3333-4444', contactPerson: 'Tia Ana', notes: 'Comida boa, mas atrasa as vezes.' },
+  { id: 'p4', name: 'Villa Rizza', category: 'Salão de Eventos', phone: '(11) 2222-1111', contactPerson: 'Gerente Carlos', notes: 'Tem restrição de som após 22h.' },
+  { id: 'p5', name: 'Foto & Arte', category: 'Fotografia', phone: '(11) 9999-0000', contactPerson: 'Paulo', notes: 'Entrega rápida.' },
+];
+
 const MOCK_EVENTS: AppEvent[] = [
   {
     id: '1', 
     name: 'Casamento Silva & Souza', 
     date: '2023-11-20T19:00:00', 
     clientName: 'Ana Silva', 
+    contact: '(11) 99988-7766',
+    responsible: 'André Gerente',
+    negotiationStatus: 'Pago',
     guests: 250, 
     location: 'Villa Rizza', 
     eventType: 'Casamento', 
+    groomBrideNames: 'Pedro & Ana',
     status: EventStatus.SCHEDULED, 
     budget: 15000,
     packageType: 'Gold Premium',
@@ -44,6 +60,10 @@ const MOCK_EVENTS: AppEvent[] = [
         { staffId: 's3', staffName: 'Maria Apoio', role: StaffRole.BARBACK, confirmed: false, cost: 180 }
     ], 
     specificExpenses: [], 
+    partners: [
+      { id: 'p1', name: 'DJ Alok Cover', role: 'DJ', registryId: 'p1' },
+      { id: 'p2', name: 'Cerimonial das Rosas', role: 'Cerimonialista', registryId: 'p2' }
+    ],
     notes: 'Bar de Gin foco.'
   },
   {
@@ -51,9 +71,13 @@ const MOCK_EVENTS: AppEvent[] = [
     name: '15 Anos Julia', 
     date: '2023-11-25T20:00:00', 
     clientName: 'Roberta Maes', 
+    contact: '(11) 98877-6655',
+    responsible: 'Carla Vendas',
+    negotiationStatus: 'Negociando',
     guests: 100, 
     location: 'Espaço Teen', 
     eventType: '15 Anos', 
+    debutanteName: 'Julia Maes',
     status: EventStatus.SCHEDULED, 
     budget: 8000,
     packageType: 'Teen Standard',
@@ -67,6 +91,9 @@ const MOCK_EVENTS: AppEvent[] = [
         { staffId: 's1', staffName: 'Carlos Mix', role: StaffRole.CHEFE_DE_BAR, confirmed: true, cost: 400 }
     ], 
     specificExpenses: [], 
+    partners: [
+       { id: 'p3', name: 'Buffet Kids', role: 'Outro', registryId: 'p3' }
+    ],
     notes: 'Drinks sem álcool coloridos.'
   },
   {
@@ -74,10 +101,14 @@ const MOCK_EVENTS: AppEvent[] = [
     name: 'Confraternização TechCorp', 
     date: '2023-12-10T18:00:00', 
     clientName: 'TechCorp RH', 
+    contact: 'rh@techcorp.com',
+    responsible: 'André Gerente',
+    negotiationStatus: 'Cancelado',
     guests: 50, 
     location: 'Rooftop Centro', 
     eventType: 'Corporativo', 
-    status: EventStatus.SCHEDULED, 
+    companyName: 'TechCorp Inovações',
+    status: EventStatus.CANCELLED, 
     budget: 5000,
     packageType: 'Happy Hour Basic',
     selectedDrinks: [
@@ -87,6 +118,7 @@ const MOCK_EVENTS: AppEvent[] = [
     allocatedItems: [], 
     allocatedStaff: [], 
     specificExpenses: [], 
+    partners: [],
     notes: 'Serviço rápido.'
   }
 ];
@@ -103,6 +135,8 @@ const MOCK_STAFF: Staff[] = [
   { id: 's1', name: 'Carlos Mix', role: StaffRole.CHEFE_DE_BAR, type: StaffType.PERMANENT, ratePerEvent: 400, phone: '11999999999', available: true },
   { id: 's2', name: 'João Shaker', role: StaffRole.BARTENDER, type: StaffType.FREELANCE, ratePerEvent: 250, phone: '11988888888', available: true },
   { id: 's3', name: 'Maria Apoio', role: StaffRole.BARBACK, type: StaffType.FREELANCE, ratePerEvent: 180, phone: '11977777777', available: false },
+  { id: 's4', name: 'Pedro Copeiro', role: StaffRole.COPEIRO, type: StaffType.FREELANCE, ratePerEvent: 150, phone: '11966666666', available: true },
+  { id: 's5', name: 'Ana Bar', role: StaffRole.BARTENDER, type: StaffType.FREELANCE, ratePerEvent: 250, phone: '11955555555', available: true },
 ];
 
 const MOCK_TRANSACTIONS: Transaction[] = [
@@ -112,7 +146,7 @@ const MOCK_TRANSACTIONS: Transaction[] = [
 ];
 // --- MOCK DATA END ---
 
-type View = 'dashboard' | 'events' | 'inventory' | 'staff' | 'finance';
+type View = 'dashboard' | 'eventList' | 'events' | 'inventory' | 'staff' | 'finance' | 'partners';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -124,11 +158,14 @@ const App: React.FC = () => {
   const [staff, setStaff] = useState<Staff[]>(MOCK_STAFF);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
+  const [partnersRegistry, setPartnersRegistry] = useState<PartnerRegistryItem[]>(MOCK_PARTNERS_REGISTRY);
 
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard events={events} transactions={transactions} />;
+        return <Dashboard events={events} transactions={transactions} partnerRegistry={partnersRegistry} />;
+      case 'eventList':
+        return <EventList events={events} setEvents={setEvents} partnerRegistry={partnersRegistry} setPartnerRegistry={setPartnersRegistry} staffList={staff} />;
       case 'events':
         return <EventManager events={events} setEvents={setEvents} products={products} staffMembers={staff} />;
       case 'inventory':
@@ -137,8 +174,10 @@ const App: React.FC = () => {
         return <StaffManager staffList={staff} />;
       case 'finance':
         return <FinanceManager transactions={transactions} />;
+      case 'partners':
+        return <PartnerManager registry={partnersRegistry} setRegistry={setPartnersRegistry} events={events} />;
       default:
-        return <Dashboard events={events} transactions={transactions} />;
+        return <Dashboard events={events} transactions={transactions} partnerRegistry={partnersRegistry} />;
     }
   };
 
@@ -179,7 +218,9 @@ const App: React.FC = () => {
 
         <nav className="flex-1 p-4 overflow-y-auto">
           <NavItem view="dashboard" icon={LayoutDashboard} label="Dashboard" />
+          <NavItem view="eventList" icon={ListChecks} label="Eventos" />
           <NavItem view="events" icon={CalendarDays} label="Agenda" />
+          <NavItem view="partners" icon={Handshake} label="Parceiros" />
           <NavItem view="inventory" icon={PackageSearch} label="Estoque" />
           <NavItem view="staff" icon={Users} label="Equipe" />
           <NavItem view="finance" icon={Receipt} label="Financeiro" />
@@ -204,7 +245,7 @@ const App: React.FC = () => {
         {/* Top Header */}
         <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm z-10">
           <h2 className="text-xl font-semibold text-slate-700 capitalize">
-            {currentView === 'events' ? 'Agenda de Eventos' : currentView}
+            {currentView === 'events' ? 'Agenda de Eventos' : currentView === 'eventList' ? 'Lista de Eventos' : currentView}
           </h2>
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-end">

@@ -73,6 +73,37 @@ export interface SelectedDrink {
   notes?: string; // Ex: "Sem açúcar", "Marca específica"
 }
 
+export type PartnerCategory = 
+  | 'DJ' 
+  | 'Cerimonialista' 
+  | 'Salão de Eventos' 
+  | 'Igreja' 
+  | 'Fotografia' 
+  | 'Buffet' 
+  | 'Bolo' 
+  | 'Doces' 
+  | 'Lembranças' 
+  | 'Animação' 
+  | 'Iluminação' 
+  | 'Outro';
+
+export interface Partner {
+  id: string;
+  name: string;
+  role: PartnerCategory;
+  registryId?: string; // Link to the global registry if exists
+}
+
+// Global Registry for Partners (The "Contact Book")
+export interface PartnerRegistryItem {
+  id: string;
+  name: string;
+  category: PartnerCategory;
+  phone: string;
+  contactPerson: string; // "Contato" (Name of the person to talk to)
+  notes?: string;
+}
+
 export interface AppEvent {
   id: string;
   name: string;
@@ -80,10 +111,26 @@ export interface AppEvent {
   clientName: string;
   guests: number;
   location: string;
-  eventType: string; // Casamento, 15 Anos, Corporativo
-  status: EventStatus;
+  locationNotes?: string; // Obs de local secundário
+  
+  eventType: 'Casamento' | '15 Anos' | 'Corporativo' | 'Batizado' | 'Feira' | 'Outros' | string;
+  
+  // Dynamic Fields based on eventType
+  groomBrideNames?: string; // For Casamento
+  debutanteName?: string;   // For 15 Anos
+  companyName?: string;     // For Corporativo
+  babyName?: string;        // For Batizado
+  eventName?: string;       // For Outros/Feira
+
+  status: EventStatus; // Status Operacional
   budget: number; // Valor cobrado do cliente
   
+  // Negotiation Fields
+  negotiationStatus: 'Pago' | 'Negociando' | 'Cancelado';
+  responsible: string; // Quem fechou o evento (Removed from UI but kept in type for compatibility if needed, or remove completely)
+  contact: string; // Telefone/Email de contato
+  partners: Partner[];
+
   // New Fields
   packageType?: string; // Ex: "Premium", "Standard", "Personalizado"
   selectedDrinks: SelectedDrink[];
